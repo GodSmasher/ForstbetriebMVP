@@ -20,6 +20,17 @@ interface Vehicle {
   notes: string | null
 }
 
+interface Maintenance {
+  id: string
+  vehicle_id: string
+  maintenance_type: string
+  due_date: string
+  completed_date: string | null
+  status: string
+  cost: number | null
+  notes: string | null
+}
+
 export default function VehiclesPage() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([])
   const [loading, setLoading] = useState(true)
@@ -27,10 +38,30 @@ export default function VehiclesPage() {
   const [editMode, setEditMode] = useState(false)
   const [editedVehicle, setEditedVehicle] = useState<Vehicle | null>(null)
   const [filter, setFilter] = useState('all')
+  const [maintenanceHistory, setMaintenanceHistory] = useState<Maintenance[]>([])
+  const [showMaintenanceModal, setShowMaintenanceModal] = useState(false)
+  const [savingVehicle, setSavingVehicle] = useState(false)
+  const [deletingVehicle, setDeletingVehicle] = useState(false)
+  const [successMessage, setSuccessMessage] = useState<string | null>(null)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  
+  // Maintenance form state
+  const [newMaintenance, setNewMaintenance] = useState({
+    maintenance_type: 'tuev',
+    due_date: '',
+    notes: '',
+    cost: '',
+  })
 
   useEffect(() => {
     loadVehicles()
   }, [])
+
+  useEffect(() => {
+    if (selectedVehicle) {
+      loadMaintenanceHistory(selectedVehicle.id)
+    }
+  }, [selectedVehicle])
 
   async function loadVehicles() {
     const { data } = await supabase
@@ -44,8 +75,22 @@ export default function VehiclesPage() {
     setLoading(false)
   }
 
+  async function loadMaintenanceHistory(vehicleId: string) {
+    const { data } = await supabase
+      .from('vehicle_maintenance')
+      .select('*')
+      .eq('vehicle_id', vehicleId)
+      .order('due_date', { ascending: false })
+
+    if (data) {
+      setMaintenanceHistory(data)
+    }
+  }
+
   async function updateVehicle() {
     if (!editedVehicle) return
+    setSavingVehicle(true)
+    setErrorMessage(null)
 
     const { error } = await (supabase
       .from('vehicles')
@@ -58,11 +103,91 @@ export default function VehiclesPage() {
       })
       .eq('id', editedVehicle.id)
 
-    if (!error) {
-      setVehicles(vehicles.map(v => v.id === editedVehicle.id ? editedVehicle : v))
-      setSelectedVehicle(editedVehicle)
-      setEditMode(false)
+    setSavingVehicle(false)
+
+    if (error) {
+      setErrorMessage('Fehler beim Speichern: ' + error.message)
+      return
     }
+
+    setVehicles(vehicles.map(v => v.id === editedVehicle.id ? editedVehicle : v))
+    setSelectedVehicle(editedVehicle)
+    setEditMode(false)
+    showSuccess('Fahrzeug erfolgreich aktualisiert!')
+  }
+
+  async function deleteVehicle() {
+    if (!selectedVehicle) return
+    
+    const confirmed = confirm(
+      `Fahrzeug "${selectedVehicle.license_plate}" wirklich löschen?\n\nDiese Aktion kann nicht rückgängig gemacht werden!`
+    )
+    
+    if (!confirmed) return
+
+    setDeletingVehicle(true)
+    setErrorMessage(null)
+
+    const { error } = await supabase
+      .from('vehicles')
+      .delete()
+      .eq('id', selectedVehicle.id)
+
+    setDeletingVehicle(false)
+
+    if (error) {
+      setErrorMessage('Fehler beim Löschen: ' + error.message)
+      return
+    }
+
+    setVehicles(vehicles.filter(v => v.id !== selectedVehicle.id))
+    setSelectedVehicle(null)
+    setEditMode(false)
+    showSuccess('Fahrzeug erfolgreich gelöscht!')
+  }
+
+  async function addMaintenance() {
+    if (!selectedVehicle || !newMaintenance.due_date) {
+      setErrorMessage('Bitte füllen Sie alle Pflichtfelder aus!')
+      return
+    }
+
+    setErrorMessage(null)
+
+    const { error } = await (supabase
+      .from('vehicle_maintenance')
+      .insert as any)({
+        vehicle_id: selectedVehicle.id,
+        maintenance_type: newMaintenance.maintenance_type,
+        due_date: newMaintenance.due_date,
+        notes: newMaintenance.notes || null,
+        cost: newMaintenance.cost ? parseFloat(newMaintenance.cost) : null,
+        status: 'geplant',
+      })
+
+    if (error) {
+      setErrorMessage('Fehler beim Hinzufügen der Wartung: ' + error.message)
+      return
+    }
+
+    // Reload maintenance history
+    await loadMaintenanceHistory(selectedVehicle.id)
+    
+    // Reset form
+    setNewMaintenance({
+      maintenance_type: 'tuev',
+      due_date: '',
+      notes: '',
+      cost: '',
+    })
+    
+    setShowMaintenanceModal(false)
+    showSuccess('Wartung erfolgreich geplant!')
+  }
+
+  function showSuccess(message: string) {
+    setSuccessMessage(message)
+    setTimeout(() => setSuccessMessage(null), 3000)
   }
 
   const filteredVehicles = vehicles.filter(vehicle => {
@@ -81,6 +206,15 @@ export default function VehiclesPage() {
     maintenance: vehicles.filter(v => v.status === 'wartung').length,
   }
 
+  const maintenanceTypeLabels: Record<string, string> = {
+    tuev: 'TÜV/HU',
+    oil_change: 'Ölwechsel',
+    tire_change: 'Reifenwechsel',
+    insurance: 'Versicherung',
+    general_service: 'Inspektion',
+    custom: 'Sonstiges'
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -97,6 +231,38 @@ export default function VehiclesPage() {
 
   return (
     <div className="space-y-6">
+      {/* Success Toast */}
+      {successMessage && (
+        <div className="fixed top-4 right-4 z-50 animate-slideIn">
+          <div className="bg-green-600 text-white px-6 py-4 rounded-xl shadow-2xl flex items-center space-x-3">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span className="font-semibold">{successMessage}</span>
+          </div>
+        </div>
+      )}
+
+      {/* Error Toast */}
+      {errorMessage && (
+        <div className="fixed top-4 right-4 z-50 animate-slideIn">
+          <div className="bg-red-600 text-white px-6 py-4 rounded-xl shadow-2xl flex items-start space-x-3 max-w-md">
+            <svg className="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div>
+              <p className="font-semibold">Fehler</p>
+              <p className="text-sm text-red-100">{errorMessage}</p>
+            </div>
+            <button onClick={() => setErrorMessage(null)} className="ml-auto">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -331,18 +497,29 @@ export default function VehiclesPage() {
                         type="text"
                         value={editedVehicle?.license_plate || ''}
                         onChange={(e) => setEditedVehicle(editedVehicle ? { ...editedVehicle, license_plate: e.target.value } : null)}
-                        className="text-2xl font-bold bg-white/20 border-b-2 border-white/50 outline-none px-2 py-1 rounded"
+                        className="text-2xl font-bold bg-white/20 border-b-2 border-white/50 outline-none px-2 py-1 rounded text-white placeholder-white/60"
                       />
                     ) : (
                       <h2 className="text-2xl font-bold">{selectedVehicle.license_plate}</h2>
                     )}
-                    <p className="text-blue-100 text-sm mt-1">{selectedVehicle.manufacturer || 'Unbekannt'}</p>
+                    {editMode ? (
+                      <input
+                        type="text"
+                        value={editedVehicle?.manufacturer || ''}
+                        onChange={(e) => setEditedVehicle(editedVehicle ? { ...editedVehicle, manufacturer: e.target.value } : null)}
+                        className="text-sm bg-white/20 border-b border-white/30 outline-none px-2 py-1 rounded text-blue-100 placeholder-blue-200 mt-1"
+                        placeholder="Hersteller"
+                      />
+                    ) : (
+                      <p className="text-blue-100 text-sm mt-1">{selectedVehicle.manufacturer || 'Unbekannt'}</p>
+                    )}
                   </div>
                 </div>
                 <button
                   onClick={() => {
                     setSelectedVehicle(null)
                     setEditMode(false)
+                    setEditedVehicle(null)
                   }}
                   className="text-white/80 hover:text-white hover:bg-white/10 p-2 rounded-xl transition-colors"
                 >
@@ -361,7 +538,7 @@ export default function VehiclesPage() {
                   <select
                     value={editedVehicle?.status || ''}
                     onChange={(e) => setEditedVehicle(editedVehicle ? { ...editedVehicle, status: e.target.value } : null)}
-                    className="px-4 py-2 text-sm font-semibold rounded-xl border-2 border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="px-4 py-2 text-sm font-semibold text-gray-900 rounded-xl border-2 border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
                     <option value="aktiv">Aktiv</option>
                     <option value="wartung">Wartung</option>
@@ -407,14 +584,14 @@ export default function VehiclesPage() {
                   />
                   
                   {editMode ? (
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium text-gray-600">Leistung</span>
+                    <div className="flex justify-between items-center py-2">
+                      <span className="text-sm font-medium text-gray-600">Leistung (kW)</span>
                       <input
                         type="number"
                         value={editedVehicle?.power_kw || ''}
                         onChange={(e) => setEditedVehicle(editedVehicle ? { ...editedVehicle, power_kw: parseFloat(e.target.value) || null } : null)}
-                        className="text-sm font-semibold text-gray-900 px-3 py-1 border rounded-lg w-32"
-                        placeholder="kW"
+                        className="text-sm font-semibold text-gray-900 px-3 py-2 border-2 border-gray-300 rounded-lg w-32 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="0"
                       />
                     </div>
                   ) : (
@@ -429,20 +606,6 @@ export default function VehiclesPage() {
                         : '-'
                     }
                   />
-
-                  {editMode ? (
-                    <div className="pt-4 border-t border-gray-200">
-                      <label className="text-sm font-medium text-gray-600 block mb-2">Hersteller</label>
-                      <input
-                        type="text"
-                        value={editedVehicle?.manufacturer || ''}
-                        onChange={(e) => setEditedVehicle(editedVehicle ? { ...editedVehicle, manufacturer: e.target.value } : null)}
-                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
-                  ) : (
-                    <DetailRow label="Hersteller" value={selectedVehicle.manufacturer} highlight />
-                  )}
                 </div>
 
                 {/* Right Column - Insurance Data */}
@@ -511,10 +674,87 @@ export default function VehiclesPage() {
                 </div>
               </div>
 
+              {/* Maintenance History Section */}
+              {!editMode && (
+                <div className="bg-gray-50 rounded-2xl p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-bold text-gray-900 text-lg flex items-center">
+                      <svg className="w-5 h-5 mr-2 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      Wartungshistorie
+                    </h3>
+                    <span className="text-sm text-gray-600 bg-white px-3 py-1 rounded-lg">
+                      {maintenanceHistory.length} Einträge
+                    </span>
+                  </div>
+                  
+                  {maintenanceHistory.length > 0 ? (
+                    <div className="space-y-3">
+                      {maintenanceHistory.map((maintenance) => (
+                        <div key={maintenance.id} className="bg-white p-4 rounded-xl border border-gray-200 hover:shadow-md transition-shadow">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center space-x-2 mb-2">
+                                <span className="font-semibold text-gray-900">
+                                  {maintenanceTypeLabels[maintenance.maintenance_type] || maintenance.maintenance_type}
+                                </span>
+                                <span className={`px-2 py-1 text-xs font-semibold rounded ${
+                                  maintenance.status === 'abgeschlossen' 
+                                    ? 'bg-green-100 text-green-800'
+                                    : maintenance.status === 'geplant'
+                                    ? 'bg-blue-100 text-blue-800'
+                                    : 'bg-orange-100 text-orange-800'
+                                }`}>
+                                  {maintenance.status}
+                                </span>
+                              </div>
+                              <div className="text-sm text-gray-600 space-y-1">
+                                <p className="flex items-center">
+                                  <svg className="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                  </svg>
+                                  Fällig: {new Date(maintenance.due_date).toLocaleDateString('de-DE')}
+                                </p>
+                                {maintenance.completed_date && (
+                                  <p className="flex items-center text-green-600">
+                                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    Erledigt: {new Date(maintenance.completed_date).toLocaleDateString('de-DE')}
+                                  </p>
+                                )}
+                                {maintenance.notes && (
+                                  <p className="text-xs text-gray-500 mt-2 italic">{maintenance.notes}</p>
+                                )}
+                              </div>
+                            </div>
+                            {maintenance.cost && (
+                              <div className="text-right ml-4">
+                                <p className="text-lg font-bold text-gray-900">{maintenance.cost.toFixed(2)} €</p>
+                                <p className="text-xs text-gray-500">Kosten</p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <svg className="w-12 h-12 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                      </svg>
+                      <p className="text-sm text-gray-500">Keine Wartungen geplant</p>
+                      <p className="text-xs text-gray-400 mt-1">Klicken Sie auf &quot;Wartung planen&quot; um eine hinzuzufügen</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Notes Section */}
               <div className="bg-gray-50 rounded-2xl p-6">
                 <h3 className="font-bold text-gray-900 text-lg mb-4 flex items-center">
-                  <svg className="w-5 h-5 mr-2 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 mr-2 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
                   </svg>
                   Notizen
@@ -523,7 +763,7 @@ export default function VehiclesPage() {
                   <textarea
                     value={editedVehicle?.notes || ''}
                     onChange={(e) => setEditedVehicle(editedVehicle ? { ...editedVehicle, notes: e.target.value } : null)}
-                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
                     rows={4}
                     placeholder="Notizen zum Fahrzeug..."
                   />
@@ -542,16 +782,28 @@ export default function VehiclesPage() {
                   <>
                     <button
                       onClick={updateVehicle}
-                      className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all"
+                      disabled={savingVehicle}
+                      className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center"
                     >
-                      Speichern
+                      {savingVehicle ? (
+                        <>
+                          <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                          </svg>
+                          Speichern...
+                        </>
+                      ) : (
+                        'Speichern'
+                      )}
                     </button>
                     <button
                       onClick={() => {
                         setEditMode(false)
                         setEditedVehicle(null)
                       }}
-                      className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-900 font-semibold py-3 px-4 rounded-xl transition-colors"
+                      disabled={savingVehicle}
+                      className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-900 font-semibold py-3 px-4 rounded-xl transition-colors disabled:opacity-50"
                     >
                       Abbrechen
                     </button>
@@ -567,14 +819,143 @@ export default function VehiclesPage() {
                     >
                       Bearbeiten
                     </button>
-                    <button className="flex-1 bg-orange-600 hover:bg-orange-700 text-white font-semibold py-3 px-4 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all">
+                    <button 
+                      onClick={() => setShowMaintenanceModal(true)}
+                      className="flex-1 bg-orange-600 hover:bg-orange-700 text-white font-semibold py-3 px-4 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all"
+                    >
                       Wartung planen
                     </button>
-                    <button className="bg-gray-200 hover:bg-gray-300 text-gray-900 font-semibold py-3 px-6 rounded-xl transition-colors">
-                      Dokumente
+                    <button 
+                      onClick={deleteVehicle}
+                      disabled={deletingVehicle}
+                      className="bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center"
+                    >
+                      {deletingVehicle ? (
+                        <>
+                          <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                          </svg>
+                          Löschen...
+                        </>
+                      ) : (
+                        'Löschen'
+                      )}
                     </button>
                   </>
                 )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Maintenance Modal */}
+      {showMaintenanceModal && selectedVehicle && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-3xl max-w-2xl w-full shadow-2xl">
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-orange-600 to-orange-700 p-6 rounded-t-3xl">
+              <div className="flex justify-between items-start">
+                <div className="flex items-center space-x-4">
+                  <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                    <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div className="text-white">
+                    <h2 className="text-xl font-bold">Wartung planen</h2>
+                    <p className="text-orange-100 text-sm">{selectedVehicle.license_plate}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowMaintenanceModal(false)}
+                  className="text-white/80 hover:text-white hover:bg-white/10 p-2 rounded-xl transition-colors"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* Maintenance Form */}
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-900 mb-2">
+                  Wartungsart *
+                </label>
+                <select
+                  value={newMaintenance.maintenance_type}
+                  onChange={(e) => setNewMaintenance({ ...newMaintenance, maintenance_type: e.target.value })}
+                  className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-300 rounded-xl text-gray-900 font-medium focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                >
+                  <option value="tuev">TÜV/HU</option>
+                  <option value="oil_change">Ölwechsel</option>
+                  <option value="tire_change">Reifenwechsel</option>
+                  <option value="insurance">Versicherung</option>
+                  <option value="general_service">Inspektion</option>
+                  <option value="custom">Sonstiges</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-900 mb-2">
+                  Fälligkeitsdatum *
+                </label>
+                <input
+                  type="date"
+                  value={newMaintenance.due_date}
+                  onChange={(e) => setNewMaintenance({ ...newMaintenance, due_date: e.target.value })}
+                  className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-300 rounded-xl text-gray-900 font-medium focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-900 mb-2">
+                  Geschätzte Kosten (€)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={newMaintenance.cost}
+                  onChange={(e) => setNewMaintenance({ ...newMaintenance, cost: e.target.value })}
+                  className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-300 rounded-xl text-gray-900 font-medium focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  placeholder="0.00"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-900 mb-2">
+                  Notizen
+                </label>
+                <textarea
+                  value={newMaintenance.notes}
+                  onChange={(e) => setNewMaintenance({ ...newMaintenance, notes: e.target.value })}
+                  className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-300 rounded-xl text-gray-900 focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  rows={3}
+                  placeholder="Zusätzliche Informationen..."
+                />
+              </div>
+
+              {/* Form Buttons */}
+              <div className="flex gap-3 pt-4">
+                <button
+                  onClick={addMaintenance}
+                  className="flex-1 bg-orange-600 hover:bg-orange-700 text-white font-semibold py-3 px-4 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all"
+                >
+                  Wartung hinzufügen
+                </button>
+                <button
+                  onClick={() => {
+                    setShowMaintenanceModal(false)
+                    setNewMaintenance({ maintenance_type: 'tuev', due_date: '', notes: '', cost: '' })
+                  }}
+                  className="bg-gray-200 hover:bg-gray-300 text-gray-900 font-semibold py-3 px-6 rounded-xl transition-colors"
+                >
+                  Abbrechen
+                </button>
               </div>
             </div>
           </div>
