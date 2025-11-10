@@ -3,6 +3,14 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 
+interface Team {
+  id: string
+  name: string
+  color: string | null
+  active: boolean | null
+  description: string | null
+}
+
 interface Vehicle {
   id: string
   license_plate: string
@@ -18,6 +26,8 @@ interface Vehicle {
   tsn: string | null
   insurance_data: any
   notes: string | null
+  current_team_id?: string | null
+  teams?: Team | null
 }
 
 interface Maintenance {
@@ -33,11 +43,13 @@ interface Maintenance {
 
 export default function VehiclesPage() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([])
+  const [teams, setTeams] = useState<Team[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null)
   const [editMode, setEditMode] = useState(false)
   const [editedVehicle, setEditedVehicle] = useState<Vehicle | null>(null)
   const [filter, setFilter] = useState('all')
+  const [teamFilter, setTeamFilter] = useState<string>('all')
   const [maintenanceHistory, setMaintenanceHistory] = useState<Maintenance[]>([])
   const [showMaintenanceModal, setShowMaintenanceModal] = useState(false)
   const [savingVehicle, setSavingVehicle] = useState(false)
@@ -55,6 +67,7 @@ export default function VehiclesPage() {
 
   useEffect(() => {
     loadVehicles()
+    loadTeams()
   }, [])
 
   useEffect(() => {
@@ -66,13 +79,32 @@ export default function VehiclesPage() {
   async function loadVehicles() {
     const { data } = await supabase
       .from('vehicles')
-      .select('*')
+      .select(`
+        *,
+        teams:current_team_id (
+          id,
+          name,
+          color
+        )
+      `)
       .order('license_plate')
 
     if (data) {
-      setVehicles(data)
+      setVehicles(data as any)
     }
     setLoading(false)
+  }
+
+  async function loadTeams() {
+    const { data } = await supabase
+      .from('teams')
+      .select('*')
+      .eq('active', true)
+      .order('name')
+
+    if (data) {
+      setTeams(data)
+    }
   }
 
   async function loadMaintenanceHistory(vehicleId: string) {
@@ -100,6 +132,7 @@ export default function VehiclesPage() {
         status: editedVehicle.status,
         power_kw: editedVehicle.power_kw,
         notes: editedVehicle.notes,
+        current_team_id: editedVehicle.current_team_id,
       })
       .eq('id', editedVehicle.id)
 
@@ -110,8 +143,15 @@ export default function VehiclesPage() {
       return
     }
 
-    setVehicles(vehicles.map(v => v.id === editedVehicle.id ? editedVehicle : v))
-    setSelectedVehicle(editedVehicle)
+    // Reload vehicles to get updated team data
+    await loadVehicles()
+    
+    // Find and set the updated vehicle
+    const updatedVehicle = vehicles.find(v => v.id === editedVehicle.id)
+    if (updatedVehicle) {
+      setSelectedVehicle(updatedVehicle)
+    }
+    
     setEditMode(false)
     showSuccess('Fahrzeug erfolgreich aktualisiert!')
   }
@@ -191,9 +231,18 @@ export default function VehiclesPage() {
   }
 
   const filteredVehicles = vehicles.filter(vehicle => {
-    if (filter === 'all') return true
-    if (filter === 'aktiv') return vehicle.status === 'aktiv'
-    if (filter === 'wartung') return vehicle.status === 'wartung'
+    // Status filter
+    if (filter !== 'all') {
+      if (filter === 'aktiv' && vehicle.status !== 'aktiv') return false
+      if (filter === 'wartung' && vehicle.status !== 'wartung') return false
+    }
+    
+    // Team filter
+    if (teamFilter !== 'all') {
+      if (teamFilter === 'none' && vehicle.current_team_id) return false
+      if (teamFilter !== 'none' && vehicle.current_team_id !== teamFilter) return false
+    }
+    
     return true
   })
 
@@ -342,31 +391,51 @@ export default function VehiclesPage() {
       </div>
 
       {/* Filter Tabs */}
-      <div className="flex space-x-2 bg-white p-2 rounded-xl border border-gray-200 w-fit">
-        <button
-          onClick={() => setFilter('all')}
-          className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all ${
-            filter === 'all' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-700 hover:bg-gray-100'
-          }`}
-        >
-          Alle
-        </button>
-        <button
-          onClick={() => setFilter('aktiv')}
-          className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all ${
-            filter === 'aktiv' ? 'bg-green-600 text-white shadow-md' : 'text-gray-700 hover:bg-gray-100'
-          }`}
-        >
-          Aktiv <span className="ml-1 opacity-70">({stats.active})</span>
-        </button>
-        <button
-          onClick={() => setFilter('wartung')}
-          className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all ${
-            filter === 'wartung' ? 'bg-orange-600 text-white shadow-md' : 'text-gray-700 hover:bg-gray-100'
-          }`}
-        >
-          Wartung <span className="ml-1 opacity-70">({stats.maintenance})</span>
-        </button>
+      <div className="flex flex-wrap gap-4">
+        {/* Status Filter */}
+        <div className="flex space-x-2 bg-white p-2 rounded-xl border border-gray-200">
+          <button
+            onClick={() => setFilter('all')}
+            className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all ${
+              filter === 'all' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-700 hover:bg-gray-100'
+            }`}
+          >
+            Alle
+          </button>
+          <button
+            onClick={() => setFilter('aktiv')}
+            className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all ${
+              filter === 'aktiv' ? 'bg-green-600 text-white shadow-md' : 'text-gray-700 hover:bg-gray-100'
+            }`}
+          >
+            Aktiv <span className="ml-1 opacity-70">({stats.active})</span>
+          </button>
+          <button
+            onClick={() => setFilter('wartung')}
+            className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all ${
+              filter === 'wartung' ? 'bg-orange-600 text-white shadow-md' : 'text-gray-700 hover:bg-gray-100'
+            }`}
+          >
+            Wartung <span className="ml-1 opacity-70">({stats.maintenance})</span>
+          </button>
+        </div>
+
+        {/* Team Filter */}
+        <div className="bg-white p-2 rounded-xl border border-gray-200">
+          <select
+            value={teamFilter}
+            onChange={(e) => setTeamFilter(e.target.value)}
+            className="px-5 py-2.5 rounded-lg text-sm font-semibold text-gray-700 bg-transparent border-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+          >
+            <option value="all">Alle Teams</option>
+            <option value="none">Kein Team</option>
+            {teams.map((team) => (
+              <option key={team.id} value={team.id}>
+                {team.name}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* Vehicles Table */}
@@ -391,6 +460,9 @@ export default function VehiclesPage() {
               </th>
               <th className="px-6 py-4 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">
                 Status
+              </th>
+              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">
+                Team
               </th>
               <th className="px-6 py-4 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">
                 Aktionen
@@ -459,6 +531,21 @@ export default function VehiclesPage() {
                     >
                       {vehicle.status === 'aktiv' ? 'Aktiv' : vehicle.status === 'wartung' ? 'Wartung' : vehicle.status}
                     </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {vehicle.teams ? (
+                      <div className="flex items-center space-x-2">
+                        {vehicle.teams.color && (
+                          <div
+                            className="w-3 h-3 rounded-full"
+                            style={{ backgroundColor: vehicle.teams.color }}
+                          />
+                        )}
+                        <span className="text-sm font-medium text-gray-900">{vehicle.teams.name}</span>
+                      </div>
+                    ) : (
+                      <span className="text-sm text-gray-400">-</span>
+                    )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
                     <button
@@ -532,8 +619,8 @@ export default function VehiclesPage() {
 
             {/* Modal Content */}
             <div className="p-6 space-y-6">
-              {/* Status and WKZ Badges */}
-              <div className="flex items-center space-x-3">
+              {/* Status, WKZ, and Team Badges */}
+              <div className="flex flex-wrap items-center gap-3">
                 {editMode ? (
                   <select
                     value={editedVehicle?.status || ''}
@@ -562,6 +649,39 @@ export default function VehiclesPage() {
                     WKZ: {selectedVehicle.wkz_code}
                   </span>
                 )}
+                {/* Team Badge/Selector */}
+                {editMode ? (
+                  <div className="flex items-center space-x-2">
+                    <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                    <select
+                      value={editedVehicle?.current_team_id || ''}
+                      onChange={(e) => setEditedVehicle(editedVehicle ? { ...editedVehicle, current_team_id: e.target.value || null } : null)}
+                      className="px-4 py-2 text-sm font-semibold text-gray-900 rounded-xl border-2 border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="">Kein Team</option>
+                      {teams.map((team) => (
+                        <option key={team.id} value={team.id}>
+                          {team.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ) : selectedVehicle.teams ? (
+                  <div className="flex items-center space-x-2 px-4 py-2 bg-purple-100 rounded-xl">
+                    <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                    {selectedVehicle.teams.color && (
+                      <div
+                        className="w-3 h-3 rounded-full ring-2 ring-white"
+                        style={{ backgroundColor: selectedVehicle.teams.color }}
+                      />
+                    )}
+                    <span className="font-semibold text-purple-900">{selectedVehicle.teams.name}</span>
+                  </div>
+                ) : null}
               </div>
 
               {/* Vehicle Details Grid */}
