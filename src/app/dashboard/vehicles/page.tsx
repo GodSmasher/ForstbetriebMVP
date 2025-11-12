@@ -56,12 +56,29 @@ export default function VehiclesPage() {
   const [deletingVehicle, setDeletingVehicle] = useState(false)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [showAddVehicleModal, setShowAddVehicleModal] = useState(false)
   
   const [newMaintenance, setNewMaintenance] = useState({
     maintenance_type: 'tuev',
     due_date: '',
     notes: '',
     cost: '',
+  })
+
+  const [newVehicle, setNewVehicle] = useState({
+    license_plate: '',
+    manufacturer: '',
+    wkz_code: '',
+    power_kw: '',
+    first_registration: '',
+    status: 'aktiv',
+    fleet_number: '',
+    fin: '',
+    vnr: '',
+    hsn: '',
+    tsn: '',
+    current_team_id: '',
+    notes: '',
   })
 
   useEffect(() => {
@@ -225,6 +242,63 @@ export default function VehiclesPage() {
     setTimeout(() => setSuccessMessage(null), 3000)
   }
 
+  async function addVehicle() {
+    if (!newVehicle.license_plate) {
+      setErrorMessage('Bitte geben Sie mindestens ein Kennzeichen ein!')
+      return
+    }
+
+    setSavingVehicle(true)
+    setErrorMessage(null)
+
+    const { data, error } = await (supabase
+      .from('vehicles')
+      .insert as any)({
+        license_plate: newVehicle.license_plate,
+        manufacturer: newVehicle.manufacturer || null,
+        wkz_code: newVehicle.wkz_code || null,
+        power_kw: newVehicle.power_kw ? parseFloat(newVehicle.power_kw) : null,
+        first_registration: newVehicle.first_registration || null,
+        status: newVehicle.status,
+        fleet_number: newVehicle.fleet_number || null,
+        fin: newVehicle.fin || null,
+        vnr: newVehicle.vnr || null,
+        hsn: newVehicle.hsn || null,
+        tsn: newVehicle.tsn || null,
+        current_team_id: newVehicle.current_team_id || null,
+        notes: newVehicle.notes || null,
+      })
+      .select()
+
+    setSavingVehicle(false)
+
+    if (error) {
+      setErrorMessage('Fehler beim Hinzufügen: ' + error.message)
+      return
+    }
+
+    await loadVehicles()
+    
+    setNewVehicle({
+      license_plate: '',
+      manufacturer: '',
+      wkz_code: '',
+      power_kw: '',
+      first_registration: '',
+      status: 'aktiv',
+      fleet_number: '',
+      fin: '',
+      vnr: '',
+      hsn: '',
+      tsn: '',
+      current_team_id: '',
+      notes: '',
+    })
+    
+    setShowAddVehicleModal(false)
+    showSuccess('Fahrzeug erfolgreich hinzugefügt!')
+  }
+
   const filteredVehicles = vehicles.filter(vehicle => {
     if (filter !== 'all') {
       if (filter === 'aktiv' && vehicle.status !== 'aktiv') return false
@@ -305,7 +379,10 @@ export default function VehiclesPage() {
           <h1 className="text-2xl font-semibold text-slate-900 leading-relaxed">Fuhrparkverwaltung</h1>
           <p className="text-slate-600 mt-1 leading-relaxed">{vehicles.length} Fahrzeuge gesamt</p>
         </div>
-        <button className="flex items-center space-x-2 px-4 py-2 bg-slate-700 hover:bg-slate-800 text-white font-semibold rounded-lg shadow-sm transition-colors">
+        <button 
+          onClick={() => setShowAddVehicleModal(true)}
+          className="flex items-center space-x-2 px-4 py-2 bg-slate-700 hover:bg-slate-800 text-white font-semibold rounded-lg shadow-sm transition-colors"
+        >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
@@ -1034,6 +1111,277 @@ export default function VehiclesPage() {
                     setNewMaintenance({ maintenance_type: 'tuev', due_date: '', notes: '', cost: '' })
                   }}
                   className="bg-slate-200 hover:bg-slate-300 text-slate-900 font-semibold py-3 px-6 rounded-lg transition-colors"
+                >
+                  Abbrechen
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showAddVehicleModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="bg-slate-700 p-6 rounded-t-lg">
+              <div className="flex justify-between items-start">
+                <div className="flex items-center space-x-4">
+                  <div className="w-12 h-12 bg-slate-600 rounded-lg flex items-center justify-center">
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                  </div>
+                  <div className="text-white">
+                    <h2 className="text-xl font-semibold">Neues Fahrzeug hinzufügen</h2>
+                    <p className="text-slate-300 text-sm">Geben Sie die Fahrzeugdaten ein</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowAddVehicleModal(false)
+                    setNewVehicle({
+                      license_plate: '',
+                      manufacturer: '',
+                      wkz_code: '',
+                      power_kw: '',
+                      first_registration: '',
+                      status: 'aktiv',
+                      fleet_number: '',
+                      fin: '',
+                      vnr: '',
+                      hsn: '',
+                      tsn: '',
+                      current_team_id: '',
+                      notes: '',
+                    })
+                  }}
+                  className="text-slate-300 hover:text-white hover:bg-slate-600 p-2 rounded-lg transition-colors"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-900 mb-2">
+                    Kennzeichen *
+                  </label>
+                  <input
+                    type="text"
+                    value={newVehicle.license_plate}
+                    onChange={(e) => setNewVehicle({ ...newVehicle, license_plate: e.target.value })}
+                    className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-300 rounded-lg text-slate-900 font-semibold focus:ring-2 focus:ring-slate-500 focus:border-transparent"
+                    placeholder="z.B. AB-CD 123"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-slate-900 mb-2">
+                    Hersteller
+                  </label>
+                  <input
+                    type="text"
+                    value={newVehicle.manufacturer}
+                    onChange={(e) => setNewVehicle({ ...newVehicle, manufacturer: e.target.value })}
+                    className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-300 rounded-lg text-slate-900 font-semibold focus:ring-2 focus:ring-slate-500 focus:border-transparent"
+                    placeholder="z.B. MERCEDES-BENZ"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-slate-900 mb-2">
+                    WKZ-Code
+                  </label>
+                  <input
+                    type="text"
+                    value={newVehicle.wkz_code}
+                    onChange={(e) => setNewVehicle({ ...newVehicle, wkz_code: e.target.value })}
+                    className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-300 rounded-lg text-slate-900 font-semibold focus:ring-2 focus:ring-slate-500 focus:border-transparent"
+                    placeholder="z.B. 3321"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-slate-900 mb-2">
+                    Leistung (kW)
+                  </label>
+                  <input
+                    type="number"
+                    value={newVehicle.power_kw}
+                    onChange={(e) => setNewVehicle({ ...newVehicle, power_kw: e.target.value })}
+                    className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-300 rounded-lg text-slate-900 font-semibold focus:ring-2 focus:ring-slate-500 focus:border-transparent"
+                    placeholder="z.B. 110"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-slate-900 mb-2">
+                    Erstzulassung
+                  </label>
+                  <input
+                    type="date"
+                    value={newVehicle.first_registration}
+                    onChange={(e) => setNewVehicle({ ...newVehicle, first_registration: e.target.value })}
+                    className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-300 rounded-lg text-slate-900 font-semibold focus:ring-2 focus:ring-slate-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-slate-900 mb-2">
+                    Status
+                  </label>
+                  <select
+                    value={newVehicle.status}
+                    onChange={(e) => setNewVehicle({ ...newVehicle, status: e.target.value })}
+                    className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-300 rounded-lg text-slate-900 font-semibold focus:ring-2 focus:ring-slate-500 focus:border-transparent"
+                  >
+                    <option value="aktiv">Aktiv</option>
+                    <option value="wartung">Wartung</option>
+                    <option value="inaktiv">Inaktiv</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-slate-900 mb-2">
+                    Flottennummer
+                  </label>
+                  <input
+                    type="text"
+                    value={newVehicle.fleet_number}
+                    onChange={(e) => setNewVehicle({ ...newVehicle, fleet_number: e.target.value })}
+                    className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-300 rounded-lg text-slate-900 font-semibold focus:ring-2 focus:ring-slate-500 focus:border-transparent"
+                    placeholder="z.B. FL-001"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-slate-900 mb-2">
+                    FIN
+                  </label>
+                  <input
+                    type="text"
+                    value={newVehicle.fin}
+                    onChange={(e) => setNewVehicle({ ...newVehicle, fin: e.target.value })}
+                    className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-300 rounded-lg text-slate-900 font-mono focus:ring-2 focus:ring-slate-500 focus:border-transparent"
+                    placeholder="17-stellige Nummer"
+                    maxLength={17}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-slate-900 mb-2">
+                    VNR
+                  </label>
+                  <input
+                    type="text"
+                    value={newVehicle.vnr}
+                    onChange={(e) => setNewVehicle({ ...newVehicle, vnr: e.target.value })}
+                    className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-300 rounded-lg text-slate-900 font-semibold focus:ring-2 focus:ring-slate-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-slate-900 mb-2">
+                    HSN
+                  </label>
+                  <input
+                    type="text"
+                    value={newVehicle.hsn}
+                    onChange={(e) => setNewVehicle({ ...newVehicle, hsn: e.target.value })}
+                    className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-300 rounded-lg text-slate-900 font-semibold focus:ring-2 focus:ring-slate-500 focus:border-transparent"
+                    placeholder="Herstellerschlüssel"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-slate-900 mb-2">
+                    TSN
+                  </label>
+                  <input
+                    type="text"
+                    value={newVehicle.tsn}
+                    onChange={(e) => setNewVehicle({ ...newVehicle, tsn: e.target.value })}
+                    className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-300 rounded-lg text-slate-900 font-semibold focus:ring-2 focus:ring-slate-500 focus:border-transparent"
+                    placeholder="Typschlüssel"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-slate-900 mb-2">
+                    Team zuweisen
+                  </label>
+                  <select
+                    value={newVehicle.current_team_id}
+                    onChange={(e) => setNewVehicle({ ...newVehicle, current_team_id: e.target.value })}
+                    className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-300 rounded-lg text-slate-900 font-semibold focus:ring-2 focus:ring-slate-500 focus:border-transparent"
+                  >
+                    <option value="">Kein Team</option>
+                    {teams.map((team) => (
+                      <option key={team.id} value={team.id}>
+                        {team.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-slate-900 mb-2">
+                  Notizen
+                </label>
+                <textarea
+                  value={newVehicle.notes}
+                  onChange={(e) => setNewVehicle({ ...newVehicle, notes: e.target.value })}
+                  className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-300 rounded-lg text-slate-900 focus:ring-2 focus:ring-slate-500 focus:border-transparent"
+                  rows={3}
+                  placeholder="Zusätzliche Informationen zum Fahrzeug..."
+                />
+              </div>
+
+              <div className="flex gap-3 pt-4 border-t border-slate-200">
+                <button
+                  onClick={addVehicle}
+                  disabled={savingVehicle}
+                  className="flex-1 bg-slate-700 hover:bg-slate-800 text-white font-semibold py-3 px-4 rounded-lg shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                >
+                  {savingVehicle ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                      Speichern...
+                    </>
+                  ) : (
+                    'Fahrzeug hinzufügen'
+                  )}
+                </button>
+                <button
+                  onClick={() => {
+                    setShowAddVehicleModal(false)
+                    setNewVehicle({
+                      license_plate: '',
+                      manufacturer: '',
+                      wkz_code: '',
+                      power_kw: '',
+                      first_registration: '',
+                      status: 'aktiv',
+                      fleet_number: '',
+                      fin: '',
+                      vnr: '',
+                      hsn: '',
+                      tsn: '',
+                      current_team_id: '',
+                      notes: '',
+                    })
+                  }}
+                  disabled={savingVehicle}
+                  className="bg-slate-200 hover:bg-slate-300 text-slate-900 font-semibold py-3 px-6 rounded-lg transition-colors disabled:opacity-50"
                 >
                   Abbrechen
                 </button>
