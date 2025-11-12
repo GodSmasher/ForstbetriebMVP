@@ -18,7 +18,6 @@ export default function DashboardLayout({
 
   useEffect(() => {
     loadProfile()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   async function loadProfile() {
@@ -42,13 +41,12 @@ export default function DashboardLayout({
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <div className="flex flex-col items-center space-y-4">
-          <svg className="animate-spin h-12 w-12 text-blue-600" fill="none" viewBox="0 0 24 24">
+          <svg className="animate-spin h-8 w-8 text-slate-700" fill="none" viewBox="0 0 24 24">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
           </svg>
-          <p className="text-gray-600 font-medium">Lade Dashboard...</p>
         </div>
       </div>
     )
@@ -99,57 +97,53 @@ export default function DashboardLayout({
   ]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      {/* Top Navigation Bar */}
-      <nav className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-50">
+    <div className="min-h-screen bg-slate-50">
+      <nav className="bg-white border-b border-slate-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
-            {/* Logo and Brand */}
             <div className="flex items-center space-x-3">
-              <div className="flex items-center justify-center w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl shadow-md">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="flex items-center justify-center w-9 h-9 bg-slate-700 rounded-lg">
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
-              <h1 className="text-xl font-bold text-gray-900 hidden sm:block">
+              <h1 className="text-lg font-semibold text-slate-900 hidden sm:block">
                 Forstbetrieb
               </h1>
             </div>
 
-            {/* User Profile Section */}
             <div className="flex items-center space-x-4">
-              <div className="hidden md:flex items-center space-x-3 px-4 py-2 bg-gray-50 rounded-xl border border-gray-200">
-                <div className="flex items-center justify-center w-8 h-8 bg-blue-600 rounded-lg">
+              <div className="hidden md:flex items-center space-x-3 px-4 py-2 bg-slate-50 rounded-lg border border-slate-200">
+                <div className="flex items-center justify-center w-8 h-8 bg-slate-700 rounded-lg">
                   <span className="text-white text-sm font-semibold">
                     {profile?.full_name?.charAt(0) || profile?.email?.charAt(0) || 'U'}
                   </span>
                 </div>
                 <div className="text-left">
-                  <p className="text-sm font-semibold text-gray-900">
+                  <p className="text-sm font-semibold text-slate-900">
                     {profile?.full_name || profile?.email}
                   </p>
-                  <p className="text-xs text-gray-600 uppercase font-medium">
+                  <p className="text-xs text-slate-600 uppercase">
                     {profile?.role || 'Benutzer'}
                   </p>
                 </div>
               </div>
               <button
                 onClick={handleSignOut}
-                className="flex items-center space-x-2 px-4 py-2 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-colors"
+                className="flex items-center space-x-2 px-4 py-2 text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
                 title="Abmelden"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                 </svg>
-                <span className="hidden sm:inline text-sm font-medium">Abmelden</span>
+                <span className="hidden sm:inline text-sm font-semibold">Abmelden</span>
               </button>
             </div>
           </div>
         </div>
       </nav>
 
-      {/* Secondary Navigation - Tabs */}
-      <div className="bg-white border-b border-gray-200 shadow-sm">
+      <div className="bg-white border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <nav className="flex space-x-1 overflow-x-auto">
             {navigation.map((item) => (
@@ -157,10 +151,10 @@ export default function DashboardLayout({
                 key={item.name}
                 href={item.href}
                 className={`
-                  flex items-center space-x-2 px-4 py-4 text-sm font-medium border-b-2 transition-all whitespace-nowrap
+                  flex items-center space-x-2 px-4 py-4 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap
                   ${item.current
-                    ? 'border-blue-600 text-blue-600 bg-blue-50'
-                    : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300 hover:bg-gray-50'
+                    ? 'border-slate-700 text-slate-900 bg-slate-50'
+                    : 'border-transparent text-slate-600 hover:text-slate-900 hover:border-slate-300'
                   }
                 `}
               >
@@ -172,7 +166,6 @@ export default function DashboardLayout({
         </div>
       </div>
 
-      {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {children}
       </main>

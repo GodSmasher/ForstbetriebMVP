@@ -30,39 +30,37 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-green-50 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
       <div className="max-w-md w-full">
-        {/* Logo/Header Section */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-2xl shadow-lg mb-4">
-            <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="inline-flex items-center justify-center w-14 h-14 bg-slate-700 rounded-lg mb-4">
+            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          <h1 className="text-2xl font-semibold text-slate-900 mb-2 leading-relaxed">
             Forstbetrieb Management
           </h1>
-          <p className="text-gray-600">
+          <p className="text-slate-600 leading-relaxed">
             Willkommen zurück
           </p>
         </div>
 
-        {/* Login Card */}
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
+        <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-8">
           <form onSubmit={handleLogin} className="space-y-6">
             {error && (
-              <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
+              <div className="bg-rose-50 border-l-4 border-rose-600 p-4 rounded-lg">
                 <div className="flex items-start">
-                  <svg className="w-5 h-5 text-red-500 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                  <svg className="w-5 h-5 text-rose-600 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
                   </svg>
-                  <p className="ml-3 text-sm text-red-800">{error}</p>
+                  <p className="ml-3 text-sm text-rose-800">{error}</p>
                 </div>
               </div>
             )}
 
             <div>
-              <label htmlFor="email" className="block text-sm font-semibold text-gray-900 mb-2">
+              <label htmlFor="email" className="block text-sm font-semibold text-slate-900 mb-2">
                 E-Mail-Adresse
               </label>
               <input
@@ -72,13 +70,13 @@ export default function LoginPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="block w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                className="block w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-700 focus:border-transparent transition-all"
                 placeholder="ihre.email@beispiel.de"
               />
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-semibold text-gray-900 mb-2">
+              <label htmlFor="password" className="block text-sm font-semibold text-slate-900 mb-2">
                 Passwort
               </label>
               <input
@@ -88,7 +86,7 @@ export default function LoginPage() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="block w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                className="block w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-700 focus:border-transparent transition-all"
                 placeholder="••••••••"
               />
             </div>
@@ -96,7 +94,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex items-center justify-center py-3.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none transition-all duration-200"
+              className="w-full flex items-center justify-center py-3 px-4 bg-slate-700 hover:bg-slate-800 text-white font-semibold rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-slate-700 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {loading ? (
                 <>
@@ -118,9 +116,8 @@ export default function LoginPage() {
           </form>
         </div>
 
-        {/* Footer */}
-        <p className="text-center text-sm text-gray-600 mt-8">
-          Sichere Verbindung • Version 1.0
+        <p className="text-center text-sm text-slate-600 mt-8">
+          Sichere Verbindung
         </p>
       </div>
     </div>

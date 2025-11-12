@@ -57,7 +57,6 @@ export default function VehiclesPage() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   
-  // Maintenance form state
   const [newMaintenance, setNewMaintenance] = useState({
     maintenance_type: 'tuev',
     due_date: '',
@@ -143,10 +142,8 @@ export default function VehiclesPage() {
       return
     }
 
-    // Reload vehicles to get updated team data
     await loadVehicles()
     
-    // Find and set the updated vehicle
     const updatedVehicle = vehicles.find(v => v.id === editedVehicle.id)
     if (updatedVehicle) {
       setSelectedVehicle(updatedVehicle)
@@ -210,10 +207,8 @@ export default function VehiclesPage() {
       return
     }
 
-    // Reload maintenance history
     await loadMaintenanceHistory(selectedVehicle.id)
     
-    // Reset form
     setNewMaintenance({
       maintenance_type: 'tuev',
       due_date: '',
@@ -231,13 +226,11 @@ export default function VehiclesPage() {
   }
 
   const filteredVehicles = vehicles.filter(vehicle => {
-    // Status filter
     if (filter !== 'all') {
       if (filter === 'aktiv' && vehicle.status !== 'aktiv') return false
       if (filter === 'wartung' && vehicle.status !== 'wartung') return false
     }
     
-    // Team filter
     if (teamFilter !== 'all') {
       if (teamFilter === 'none' && vehicle.current_team_id) return false
       if (teamFilter !== 'none' && vehicle.current_team_id !== teamFilter) return false
@@ -267,24 +260,20 @@ export default function VehiclesPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="flex flex-col items-center space-y-4">
-          <svg className="animate-spin h-12 w-12 text-blue-600" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-          </svg>
-          <p className="text-gray-600 font-medium">Lade Fahrzeuge...</p>
-        </div>
+        <svg className="animate-spin h-8 w-8 text-slate-700" fill="none" viewBox="0 0 24 24">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+        </svg>
       </div>
     )
   }
 
   return (
     <div className="space-y-6">
-      {/* Success Toast */}
       {successMessage && (
-        <div className="fixed top-4 right-4 z-50 animate-slideIn">
-          <div className="bg-green-600 text-white px-6 py-4 rounded-xl shadow-2xl flex items-center space-x-3">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="fixed top-4 right-4 z-50">
+          <div className="bg-emerald-600 text-white px-6 py-4 rounded-lg shadow-lg flex items-center space-x-3">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <span className="font-semibold">{successMessage}</span>
@@ -292,16 +281,15 @@ export default function VehiclesPage() {
         </div>
       )}
 
-      {/* Error Toast */}
       {errorMessage && (
-        <div className="fixed top-4 right-4 z-50 animate-slideIn">
-          <div className="bg-red-600 text-white px-6 py-4 rounded-xl shadow-2xl flex items-start space-x-3 max-w-md">
-            <svg className="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="fixed top-4 right-4 z-50">
+          <div className="bg-rose-600 text-white px-6 py-4 rounded-lg shadow-lg flex items-start space-x-3 max-w-md">
+            <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <div>
               <p className="font-semibold">Fehler</p>
-              <p className="text-sm text-red-100">{errorMessage}</p>
+              <p className="text-sm text-rose-100">{errorMessage}</p>
             </div>
             <button onClick={() => setErrorMessage(null)} className="ml-auto">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -312,13 +300,12 @@ export default function VehiclesPage() {
         </div>
       )}
 
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Fuhrparkverwaltung</h1>
-          <p className="text-gray-600 mt-1">{vehicles.length} Fahrzeuge gesamt</p>
+          <h1 className="text-2xl font-semibold text-slate-900 leading-relaxed">Fuhrparkverwaltung</h1>
+          <p className="text-slate-600 mt-1 leading-relaxed">{vehicles.length} Fahrzeuge gesamt</p>
         </div>
-        <button className="flex items-center space-x-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all">
+        <button className="flex items-center space-x-2 px-4 py-2 bg-slate-700 hover:bg-slate-800 text-white font-semibold rounded-lg shadow-sm transition-colors">
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
@@ -326,106 +313,102 @@ export default function VehiclesPage() {
         </button>
       </div>
 
-      {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-        <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+        <div className="bg-white rounded-lg border border-slate-200 p-6 shadow-sm">
           <div className="flex items-center justify-between mb-4">
-            <div className="bg-gray-100 p-3 rounded-xl">
-              <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="bg-slate-100 p-3 rounded-lg">
+              <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
               </svg>
             </div>
           </div>
-          <p className="text-sm font-medium text-gray-600">Gesamt</p>
-          <p className="text-3xl font-bold text-gray-900 mt-2">{stats.total}</p>
+          <p className="text-sm text-slate-600 leading-relaxed">Gesamt</p>
+          <p className="text-2xl font-semibold text-slate-900 mt-2">{stats.total}</p>
         </div>
 
-        <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-6 shadow-lg text-white">
+        <div className="bg-white rounded-lg border border-slate-200 p-6 shadow-sm">
           <div className="flex items-center justify-between mb-4">
-            <div className="bg-white/20 p-3 rounded-xl">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="bg-slate-100 p-3 rounded-lg">
+              <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
               </svg>
             </div>
           </div>
-          <p className="text-sm font-medium text-blue-100">Mercedes-Benz</p>
-          <p className="text-3xl font-bold mt-2">{stats.mercedes}</p>
+          <p className="text-sm text-slate-600 leading-relaxed">Mercedes-Benz</p>
+          <p className="text-2xl font-semibold text-slate-900 mt-2">{stats.mercedes}</p>
         </div>
 
-        <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-2xl p-6 shadow-lg text-white">
+        <div className="bg-white rounded-lg border border-slate-200 p-6 shadow-sm">
           <div className="flex items-center justify-between mb-4">
-            <div className="bg-white/20 p-3 rounded-xl">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="bg-slate-100 p-3 rounded-lg">
+              <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
           </div>
-          <p className="text-sm font-medium text-green-100">VW</p>
-          <p className="text-3xl font-bold mt-2">{stats.vw}</p>
+          <p className="text-sm text-slate-600 leading-relaxed">VW</p>
+          <p className="text-2xl font-semibold text-slate-900 mt-2">{stats.vw}</p>
         </div>
 
-        <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl p-6 shadow-lg text-white">
+        <div className="bg-white rounded-lg border border-slate-200 p-6 shadow-sm">
           <div className="flex items-center justify-between mb-4">
-            <div className="bg-white/20 p-3 rounded-xl">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="bg-slate-100 p-3 rounded-lg">
+              <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
             </div>
           </div>
-          <p className="text-sm font-medium text-purple-100">Gesamt-Leistung</p>
-          <p className="text-3xl font-bold mt-2">{stats.totalPower}</p>
-          <p className="text-xs text-purple-100 mt-1">kW</p>
+          <p className="text-sm text-slate-600 leading-relaxed">Gesamt-Leistung</p>
+          <p className="text-2xl font-semibold text-slate-900 mt-2">{stats.totalPower}</p>
+          <p className="text-xs text-slate-500 mt-1 leading-relaxed">kW</p>
         </div>
 
-        <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl p-6 shadow-lg text-white">
+        <div className="bg-white rounded-lg border border-slate-200 p-6 shadow-sm">
           <div className="flex items-center justify-between mb-4">
-            <div className="bg-white/20 p-3 rounded-xl">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="bg-amber-100 p-3 rounded-lg">
+              <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
           </div>
-          <p className="text-sm font-medium text-orange-100">In Wartung</p>
-          <p className="text-3xl font-bold mt-2">{stats.maintenance}</p>
+          <p className="text-sm text-slate-600 leading-relaxed">In Wartung</p>
+          <p className="text-2xl font-semibold text-slate-900 mt-2">{stats.maintenance}</p>
         </div>
       </div>
 
-      {/* Filter Tabs */}
       <div className="flex flex-wrap gap-4">
-        {/* Status Filter */}
-        <div className="flex space-x-2 bg-white p-2 rounded-xl border border-gray-200">
+        <div className="flex space-x-2 bg-white p-2 rounded-lg border border-slate-200">
           <button
             onClick={() => setFilter('all')}
-            className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all ${
-              filter === 'all' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-700 hover:bg-gray-100'
+            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
+              filter === 'all' ? 'bg-slate-700 text-white' : 'text-slate-700 hover:bg-slate-50'
             }`}
           >
             Alle
           </button>
           <button
             onClick={() => setFilter('aktiv')}
-            className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all ${
-              filter === 'aktiv' ? 'bg-green-600 text-white shadow-md' : 'text-gray-700 hover:bg-gray-100'
+            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
+              filter === 'aktiv' ? 'bg-emerald-600 text-white' : 'text-slate-700 hover:bg-slate-50'
             }`}
           >
-            Aktiv <span className="ml-1 opacity-70">({stats.active})</span>
+            Aktiv ({stats.active})
           </button>
           <button
             onClick={() => setFilter('wartung')}
-            className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all ${
-              filter === 'wartung' ? 'bg-orange-600 text-white shadow-md' : 'text-gray-700 hover:bg-gray-100'
+            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
+              filter === 'wartung' ? 'bg-amber-600 text-white' : 'text-slate-700 hover:bg-slate-50'
             }`}
           >
-            Wartung <span className="ml-1 opacity-70">({stats.maintenance})</span>
+            Wartung ({stats.maintenance})
           </button>
         </div>
 
-        {/* Team Filter */}
-        <div className="bg-white p-2 rounded-xl border border-gray-200">
+        <div className="bg-white p-2 rounded-lg border border-slate-200">
           <select
             value={teamFilter}
             onChange={(e) => setTeamFilter(e.target.value)}
-            className="px-5 py-2.5 rounded-lg text-sm font-semibold text-gray-700 bg-transparent border-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+            className="px-4 py-2 rounded-lg text-sm font-semibold text-slate-700 bg-transparent border-none focus:ring-2 focus:ring-slate-500 cursor-pointer"
           >
             <option value="all">Alle Teams</option>
             <option value="none">Kein Team</option>
@@ -438,83 +421,81 @@ export default function VehiclesPage() {
         </div>
       </div>
 
-      {/* Vehicles Table */}
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+      <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
+        <table className="min-w-full divide-y divide-slate-200">
+          <thead className="bg-slate-50">
             <tr>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">
+              <th className="px-6 py-4 text-left text-xs font-semibold text-slate-900 uppercase tracking-wider">
                 Kennzeichen
               </th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">
+              <th className="px-6 py-4 text-left text-xs font-semibold text-slate-900 uppercase tracking-wider">
                 Hersteller
               </th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">
+              <th className="px-6 py-4 text-left text-xs font-semibold text-slate-900 uppercase tracking-wider">
                 WKZ
               </th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">
+              <th className="px-6 py-4 text-left text-xs font-semibold text-slate-900 uppercase tracking-wider">
                 Leistung
               </th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">
+              <th className="px-6 py-4 text-left text-xs font-semibold text-slate-900 uppercase tracking-wider">
                 Erstzulassung
               </th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">
+              <th className="px-6 py-4 text-left text-xs font-semibold text-slate-900 uppercase tracking-wider">
                 Status
               </th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">
+              <th className="px-6 py-4 text-left text-xs font-semibold text-slate-900 uppercase tracking-wider">
                 Team
               </th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">
+              <th className="px-6 py-4 text-left text-xs font-semibold text-slate-900 uppercase tracking-wider">
                 Aktionen
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-white divide-y divide-slate-200">
             {filteredVehicles.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-6 py-12 text-center">
+                <td colSpan={8} className="px-6 py-12 text-center">
                   <div className="flex flex-col items-center">
-                    <svg className="w-12 h-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-12 h-12 text-slate-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
                     </svg>
-                    <p className="text-gray-600 font-medium">Keine Fahrzeuge gefunden</p>
-                    <p className="text-gray-500 text-sm mt-1">Passen Sie die Filter an oder fügen Sie ein neues Fahrzeug hinzu</p>
+                    <p className="text-slate-600 font-semibold">Keine Fahrzeuge gefunden</p>
                   </div>
                 </td>
               </tr>
             ) : (
               filteredVehicles.map((vehicle) => (
-                <tr key={vehicle.id} className="hover:bg-gray-50 transition-colors">
+                <tr key={vehicle.id} className="hover:bg-slate-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
-                      <div className="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                        <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="flex-shrink-0 w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center">
+                        <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
                         </svg>
                       </div>
                       <div className="ml-4">
-                        <div className="text-sm font-bold text-gray-900">{vehicle.license_plate}</div>
+                        <div className="text-sm font-semibold text-slate-900">{vehicle.license_plate}</div>
                         {vehicle.fleet_number && (
-                          <div className="text-xs text-gray-500">Flottenr. {vehicle.fleet_number}</div>
+                          <div className="text-xs text-slate-500">Flottenr. {vehicle.fleet_number}</div>
                         )}
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">{vehicle.manufacturer || '-'}</div>
+                    <div className="text-sm font-semibold text-slate-900">{vehicle.manufacturer || '-'}</div>
                     {vehicle.fin && (
-                      <div className="text-xs text-gray-500 font-mono">FIN: ...{vehicle.fin.slice(-6)}</div>
+                      <div className="text-xs text-slate-500 font-mono">FIN: ...{vehicle.fin.slice(-6)}</div>
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="px-3 py-1 text-xs font-semibold bg-gray-100 text-gray-800 rounded-lg">
+                    <span className="px-3 py-1 text-xs font-semibold bg-slate-100 text-slate-700 rounded-lg">
                       {vehicle.wkz_code || '-'}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-slate-900">
                     {vehicle.power_kw ? `${vehicle.power_kw} kW` : '-'}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
                     {vehicle.first_registration
                       ? new Date(vehicle.first_registration).toLocaleDateString('de-DE')
                       : '-'}
@@ -523,10 +504,10 @@ export default function VehiclesPage() {
                     <span
                       className={`px-3 py-1 text-xs font-semibold rounded-lg ${
                         vehicle.status === 'aktiv'
-                          ? 'bg-green-100 text-green-800'
+                          ? 'bg-emerald-100 text-emerald-800'
                           : vehicle.status === 'wartung'
-                          ? 'bg-orange-100 text-orange-800'
-                          : 'bg-gray-100 text-gray-800'
+                          ? 'bg-amber-100 text-amber-800'
+                          : 'bg-slate-100 text-slate-800'
                       }`}
                     >
                       {vehicle.status === 'aktiv' ? 'Aktiv' : vehicle.status === 'wartung' ? 'Wartung' : vehicle.status}
@@ -541,10 +522,10 @@ export default function VehiclesPage() {
                             style={{ backgroundColor: vehicle.teams.color }}
                           />
                         )}
-                        <span className="text-sm font-medium text-gray-900">{vehicle.teams.name}</span>
+                        <span className="text-sm font-semibold text-slate-900">{vehicle.teams.name}</span>
                       </div>
                     ) : (
-                      <span className="text-sm text-gray-400">-</span>
+                      <span className="text-sm text-slate-400">-</span>
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
@@ -553,7 +534,7 @@ export default function VehiclesPage() {
                         setSelectedVehicle(vehicle)
                         setEditMode(false)
                       }}
-                      className="text-blue-600 hover:text-blue-900 font-semibold hover:underline"
+                      className="text-slate-700 hover:text-slate-900 font-semibold hover:underline"
                     >
                       Details
                     </button>
@@ -565,16 +546,14 @@ export default function VehiclesPage() {
         </table>
       </div>
 
-      {/* Vehicle Detail Modal */}
       {selectedVehicle && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-3xl max-w-5xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
-            {/* Modal Header */}
-            <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-700 p-6 rounded-t-3xl z-10">
+          <div className="bg-white rounded-lg max-w-5xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-slate-700 p-6 rounded-t-lg z-10">
               <div className="flex justify-between items-start">
                 <div className="flex items-center space-x-4">
-                  <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center">
-                    <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="w-12 h-12 bg-slate-600 rounded-lg flex items-center justify-center">
+                    <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
                     </svg>
                   </div>
@@ -584,21 +563,21 @@ export default function VehiclesPage() {
                         type="text"
                         value={editedVehicle?.license_plate || ''}
                         onChange={(e) => setEditedVehicle(editedVehicle ? { ...editedVehicle, license_plate: e.target.value } : null)}
-                        className="text-2xl font-bold bg-white/20 border-b-2 border-white/50 outline-none px-2 py-1 rounded text-white placeholder-white/60"
+                        className="text-xl font-semibold bg-slate-600 border-b-2 border-slate-500 outline-none px-2 py-1 rounded text-white"
                       />
                     ) : (
-                      <h2 className="text-2xl font-bold">{selectedVehicle.license_plate}</h2>
+                      <h2 className="text-xl font-semibold">{selectedVehicle.license_plate}</h2>
                     )}
                     {editMode ? (
                       <input
                         type="text"
                         value={editedVehicle?.manufacturer || ''}
                         onChange={(e) => setEditedVehicle(editedVehicle ? { ...editedVehicle, manufacturer: e.target.value } : null)}
-                        className="text-sm bg-white/20 border-b border-white/30 outline-none px-2 py-1 rounded text-blue-100 placeholder-blue-200 mt-1"
+                        className="text-sm bg-slate-600 border-b border-slate-500 outline-none px-2 py-1 rounded text-slate-300 mt-1"
                         placeholder="Hersteller"
                       />
                     ) : (
-                      <p className="text-blue-100 text-sm mt-1">{selectedVehicle.manufacturer || 'Unbekannt'}</p>
+                      <p className="text-slate-300 text-sm mt-1">{selectedVehicle.manufacturer || 'Unbekannt'}</p>
                     )}
                   </div>
                 </div>
@@ -608,7 +587,7 @@ export default function VehiclesPage() {
                     setEditMode(false)
                     setEditedVehicle(null)
                   }}
-                  className="text-white/80 hover:text-white hover:bg-white/10 p-2 rounded-xl transition-colors"
+                  className="text-slate-300 hover:text-white hover:bg-slate-600 p-2 rounded-lg transition-colors"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -617,15 +596,13 @@ export default function VehiclesPage() {
               </div>
             </div>
 
-            {/* Modal Content */}
             <div className="p-6 space-y-6">
-              {/* Status, WKZ, and Team Badges */}
               <div className="flex flex-wrap items-center gap-3">
                 {editMode ? (
                   <select
                     value={editedVehicle?.status || ''}
                     onChange={(e) => setEditedVehicle(editedVehicle ? { ...editedVehicle, status: e.target.value } : null)}
-                    className="px-4 py-2 text-sm font-semibold text-gray-900 rounded-xl border-2 border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="px-4 py-2 text-sm font-semibold text-slate-900 rounded-lg border-2 border-slate-300 focus:ring-2 focus:ring-slate-500 focus:border-transparent"
                   >
                     <option value="aktiv">Aktiv</option>
                     <option value="wartung">Wartung</option>
@@ -633,32 +610,31 @@ export default function VehiclesPage() {
                   </select>
                 ) : (
                   <span
-                    className={`px-4 py-2 text-sm font-semibold rounded-xl ${
+                    className={`px-4 py-2 text-sm font-semibold rounded-lg ${
                       selectedVehicle.status === 'aktiv'
-                        ? 'bg-green-100 text-green-800'
+                        ? 'bg-emerald-100 text-emerald-800'
                         : selectedVehicle.status === 'wartung'
-                        ? 'bg-orange-100 text-orange-800'
-                        : 'bg-gray-100 text-gray-800'
+                        ? 'bg-amber-100 text-amber-800'
+                        : 'bg-slate-100 text-slate-800'
                     }`}
                   >
                     {selectedVehicle.status}
                   </span>
                 )}
                 {selectedVehicle.wkz_code && (
-                  <span className="px-4 py-2 text-sm font-semibold bg-blue-100 text-blue-800 rounded-xl">
+                  <span className="px-4 py-2 text-sm font-semibold bg-slate-100 text-slate-700 rounded-lg">
                     WKZ: {selectedVehicle.wkz_code}
                   </span>
                 )}
-                {/* Team Badge/Selector */}
                 {editMode ? (
                   <div className="flex items-center space-x-2">
-                    <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                     </svg>
                     <select
                       value={editedVehicle?.current_team_id || ''}
                       onChange={(e) => setEditedVehicle(editedVehicle ? { ...editedVehicle, current_team_id: e.target.value || null } : null)}
-                      className="px-4 py-2 text-sm font-semibold text-gray-900 rounded-xl border-2 border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="px-4 py-2 text-sm font-semibold text-slate-900 rounded-lg border-2 border-slate-300 focus:ring-2 focus:ring-slate-500 focus:border-transparent"
                     >
                       <option value="">Kein Team</option>
                       {teams.map((team) => (
@@ -669,27 +645,25 @@ export default function VehiclesPage() {
                     </select>
                   </div>
                 ) : selectedVehicle.teams ? (
-                  <div className="flex items-center space-x-2 px-4 py-2 bg-purple-100 rounded-xl">
-                    <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="flex items-center space-x-2 px-4 py-2 bg-slate-100 rounded-lg">
+                    <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                     </svg>
                     {selectedVehicle.teams.color && (
                       <div
-                        className="w-3 h-3 rounded-full ring-2 ring-white"
+                        className="w-3 h-3 rounded-full"
                         style={{ backgroundColor: selectedVehicle.teams.color }}
                       />
                     )}
-                    <span className="font-semibold text-purple-900">{selectedVehicle.teams.name}</span>
+                    <span className="font-semibold text-slate-900">{selectedVehicle.teams.name}</span>
                   </div>
                 ) : null}
               </div>
 
-              {/* Vehicle Details Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Left Column - Basic Data */}
-                <div className="bg-gray-50 rounded-2xl p-6 space-y-4">
-                  <h3 className="font-bold text-gray-900 text-lg mb-4 flex items-center">
-                    <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="bg-slate-50 rounded-lg p-6 space-y-4">
+                  <h3 className="font-semibold text-slate-900 text-lg mb-4 leading-relaxed flex items-center">
+                    <svg className="w-5 h-5 mr-2 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                     Fahrzeugdaten
@@ -705,12 +679,12 @@ export default function VehiclesPage() {
                   
                   {editMode ? (
                     <div className="flex justify-between items-center py-2">
-                      <span className="text-sm font-medium text-gray-600">Leistung (kW)</span>
+                      <span className="text-sm font-semibold text-slate-600">Leistung (kW)</span>
                       <input
                         type="number"
                         value={editedVehicle?.power_kw || ''}
                         onChange={(e) => setEditedVehicle(editedVehicle ? { ...editedVehicle, power_kw: parseFloat(e.target.value) || null } : null)}
-                        className="text-sm font-semibold text-gray-900 px-3 py-2 border-2 border-gray-300 rounded-lg w-32 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="text-sm font-semibold text-slate-900 px-3 py-2 border-2 border-slate-300 rounded-lg w-32 focus:ring-2 focus:ring-slate-500 focus:border-transparent"
                         placeholder="0"
                       />
                     </div>
@@ -728,10 +702,9 @@ export default function VehiclesPage() {
                   />
                 </div>
 
-                {/* Right Column - Insurance Data */}
-                <div className="bg-gray-50 rounded-2xl p-6 space-y-4">
-                  <h3 className="font-bold text-gray-900 text-lg mb-4 flex items-center">
-                    <svg className="w-5 h-5 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="bg-slate-50 rounded-lg p-6 space-y-4">
+                  <h3 className="font-semibold text-slate-900 text-lg mb-4 leading-relaxed flex items-center">
+                    <svg className="w-5 h-5 mr-2 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                     </svg>
                     Versicherungsdaten
@@ -767,11 +740,7 @@ export default function VehiclesPage() {
                             : '-'
                         }
                       />
-                      <DetailRow 
-                        label="Selbstbehalt KF" 
-                        value={(selectedVehicle.insurance_data as any).selbstbehalt_kf} 
-                      />
-                      <div className="pt-3 border-t border-gray-300">
+                      <div className="pt-3 border-t border-slate-300">
                         <DetailRow
                           label="Gesamtbeitrag (mtl.)"
                           value={
@@ -785,26 +754,25 @@ export default function VehiclesPage() {
                     </>
                   ) : (
                     <div className="text-center py-8">
-                      <svg className="w-12 h-12 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-12 h-12 text-slate-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                       </svg>
-                      <p className="text-sm text-gray-500 italic">Keine Versicherungsdaten verfügbar</p>
+                      <p className="text-sm text-slate-500">Keine Versicherungsdaten verfügbar</p>
                     </div>
                   )}
                 </div>
               </div>
 
-              {/* Maintenance History Section */}
               {!editMode && (
-                <div className="bg-gray-50 rounded-2xl p-6">
+                <div className="bg-slate-50 rounded-lg p-6">
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-bold text-gray-900 text-lg flex items-center">
-                      <svg className="w-5 h-5 mr-2 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <h3 className="font-semibold text-slate-900 text-lg leading-relaxed flex items-center">
+                      <svg className="w-5 h-5 mr-2 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                       Wartungshistorie
                     </h3>
-                    <span className="text-sm text-gray-600 bg-white px-3 py-1 rounded-lg">
+                    <span className="text-sm text-slate-600 bg-white px-3 py-1 rounded-lg">
                       {maintenanceHistory.length} Einträge
                     </span>
                   </div>
@@ -812,32 +780,32 @@ export default function VehiclesPage() {
                   {maintenanceHistory.length > 0 ? (
                     <div className="space-y-3">
                       {maintenanceHistory.map((maintenance) => (
-                        <div key={maintenance.id} className="bg-white p-4 rounded-xl border border-gray-200 hover:shadow-md transition-shadow">
+                        <div key={maintenance.id} className="bg-white p-4 rounded-lg border border-slate-200">
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
                               <div className="flex items-center space-x-2 mb-2">
-                                <span className="font-semibold text-gray-900">
+                                <span className="font-semibold text-slate-900">
                                   {maintenanceTypeLabels[maintenance.maintenance_type] || maintenance.maintenance_type}
                                 </span>
                                 <span className={`px-2 py-1 text-xs font-semibold rounded ${
                                   maintenance.status === 'abgeschlossen' 
-                                    ? 'bg-green-100 text-green-800'
+                                    ? 'bg-emerald-100 text-emerald-800'
                                     : maintenance.status === 'geplant'
-                                    ? 'bg-blue-100 text-blue-800'
-                                    : 'bg-orange-100 text-orange-800'
+                                    ? 'bg-slate-100 text-slate-800'
+                                    : 'bg-amber-100 text-amber-800'
                                 }`}>
                                   {maintenance.status}
                                 </span>
                               </div>
-                              <div className="text-sm text-gray-600 space-y-1">
+                              <div className="text-sm text-slate-600 space-y-1">
                                 <p className="flex items-center">
-                                  <svg className="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <svg className="w-4 h-4 mr-2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                   </svg>
                                   Fällig: {new Date(maintenance.due_date).toLocaleDateString('de-DE')}
                                 </p>
                                 {maintenance.completed_date && (
-                                  <p className="flex items-center text-green-600">
+                                  <p className="flex items-center text-emerald-600">
                                     <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
@@ -845,14 +813,14 @@ export default function VehiclesPage() {
                                   </p>
                                 )}
                                 {maintenance.notes && (
-                                  <p className="text-xs text-gray-500 mt-2 italic">{maintenance.notes}</p>
+                                  <p className="text-xs text-slate-500 mt-2">{maintenance.notes}</p>
                                 )}
                               </div>
                             </div>
                             {maintenance.cost && (
                               <div className="text-right ml-4">
-                                <p className="text-lg font-bold text-gray-900">{maintenance.cost.toFixed(2)} €</p>
-                                <p className="text-xs text-gray-500">Kosten</p>
+                                <p className="text-lg font-semibold text-slate-900">{maintenance.cost.toFixed(2)} €</p>
+                                <p className="text-xs text-slate-500">Kosten</p>
                               </div>
                             )}
                           </div>
@@ -861,20 +829,18 @@ export default function VehiclesPage() {
                     </div>
                   ) : (
                     <div className="text-center py-8">
-                      <svg className="w-12 h-12 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-12 h-12 text-slate-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                       </svg>
-                      <p className="text-sm text-gray-500">Keine Wartungen geplant</p>
-                      <p className="text-xs text-gray-400 mt-1">Klicken Sie auf &quot;Wartung planen&quot; um eine hinzuzufügen</p>
+                      <p className="text-sm text-slate-500">Keine Wartungen geplant</p>
                     </div>
                   )}
                 </div>
               )}
 
-              {/* Notes Section */}
-              <div className="bg-gray-50 rounded-2xl p-6">
-                <h3 className="font-bold text-gray-900 text-lg mb-4 flex items-center">
-                  <svg className="w-5 h-5 mr-2 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="bg-slate-50 rounded-lg p-6">
+                <h3 className="font-semibold text-slate-900 text-lg mb-4 leading-relaxed flex items-center">
+                  <svg className="w-5 h-5 mr-2 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
                   </svg>
                   Notizen
@@ -883,27 +849,26 @@ export default function VehiclesPage() {
                   <textarea
                     value={editedVehicle?.notes || ''}
                     onChange={(e) => setEditedVehicle(editedVehicle ? { ...editedVehicle, notes: e.target.value } : null)}
-                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                    className="w-full px-4 py-3 border-2 border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent text-slate-900"
                     rows={4}
                     placeholder="Notizen zum Fahrzeug..."
                   />
                 ) : (
-                  <div className="text-sm text-gray-700 bg-white p-4 rounded-xl border border-gray-200">
+                  <div className="text-sm text-slate-700 bg-white p-4 rounded-lg border border-slate-200 leading-relaxed">
                     {selectedVehicle.notes || (
-                      <span className="text-gray-400 italic">Keine Notizen vorhanden</span>
+                      <span className="text-slate-400">Keine Notizen vorhanden</span>
                     )}
                   </div>
                 )}
               </div>
 
-              {/* Action Buttons */}
-              <div className="flex gap-3 pt-4 border-t border-gray-200">
+              <div className="flex gap-3 pt-4 border-t border-slate-200">
                 {editMode ? (
                   <>
                     <button
                       onClick={updateVehicle}
                       disabled={savingVehicle}
-                      className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center"
+                      className="flex-1 bg-slate-700 hover:bg-slate-800 text-white font-semibold py-3 px-4 rounded-lg shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                     >
                       {savingVehicle ? (
                         <>
@@ -923,7 +888,7 @@ export default function VehiclesPage() {
                         setEditedVehicle(null)
                       }}
                       disabled={savingVehicle}
-                      className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-900 font-semibold py-3 px-4 rounded-xl transition-colors disabled:opacity-50"
+                      className="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-900 font-semibold py-3 px-4 rounded-lg transition-colors disabled:opacity-50"
                     >
                       Abbrechen
                     </button>
@@ -935,20 +900,20 @@ export default function VehiclesPage() {
                         setEditMode(true)
                         setEditedVehicle(selectedVehicle)
                       }}
-                      className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all"
+                      className="flex-1 bg-slate-700 hover:bg-slate-800 text-white font-semibold py-3 px-4 rounded-lg shadow-sm transition-colors"
                     >
                       Bearbeiten
                     </button>
                     <button 
                       onClick={() => setShowMaintenanceModal(true)}
-                      className="flex-1 bg-orange-600 hover:bg-orange-700 text-white font-semibold py-3 px-4 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all"
+                      className="flex-1 bg-amber-600 hover:bg-amber-700 text-white font-semibold py-3 px-4 rounded-lg shadow-sm transition-colors"
                     >
                       Wartung planen
                     </button>
                     <button 
                       onClick={deleteVehicle}
                       disabled={deletingVehicle}
-                      className="bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center"
+                      className="bg-rose-600 hover:bg-rose-700 text-white font-semibold py-3 px-6 rounded-lg shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
                     >
                       {deletingVehicle ? (
                         <>
@@ -970,27 +935,25 @@ export default function VehiclesPage() {
         </div>
       )}
 
-      {/* Add Maintenance Modal */}
       {showMaintenanceModal && selectedVehicle && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-3xl max-w-2xl w-full shadow-2xl">
-            {/* Modal Header */}
-            <div className="bg-gradient-to-r from-orange-600 to-orange-700 p-6 rounded-t-3xl">
+          <div className="bg-white rounded-lg max-w-2xl w-full">
+            <div className="bg-amber-600 p-6 rounded-t-lg">
               <div className="flex justify-between items-start">
                 <div className="flex items-center space-x-4">
-                  <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
-                    <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="w-12 h-12 bg-amber-500 rounded-lg flex items-center justify-center">
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                   </div>
                   <div className="text-white">
-                    <h2 className="text-xl font-bold">Wartung planen</h2>
-                    <p className="text-orange-100 text-sm">{selectedVehicle.license_plate}</p>
+                    <h2 className="text-xl font-semibold">Wartung planen</h2>
+                    <p className="text-amber-100 text-sm">{selectedVehicle.license_plate}</p>
                   </div>
                 </div>
                 <button
                   onClick={() => setShowMaintenanceModal(false)}
-                  className="text-white/80 hover:text-white hover:bg-white/10 p-2 rounded-xl transition-colors"
+                  className="text-amber-100 hover:text-white hover:bg-amber-500 p-2 rounded-lg transition-colors"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -999,16 +962,15 @@ export default function VehiclesPage() {
               </div>
             </div>
 
-            {/* Maintenance Form */}
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-semibold text-gray-900 mb-2">
+                <label className="block text-sm font-semibold text-slate-900 mb-2">
                   Wartungsart *
                 </label>
                 <select
                   value={newMaintenance.maintenance_type}
                   onChange={(e) => setNewMaintenance({ ...newMaintenance, maintenance_type: e.target.value })}
-                  className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-300 rounded-xl text-gray-900 font-medium focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-300 rounded-lg text-slate-900 font-semibold focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                 >
                   <option value="tuev">TÜV/HU</option>
                   <option value="oil_change">Ölwechsel</option>
@@ -1020,20 +982,20 @@ export default function VehiclesPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-900 mb-2">
+                <label className="block text-sm font-semibold text-slate-900 mb-2">
                   Fälligkeitsdatum *
                 </label>
                 <input
                   type="date"
                   value={newMaintenance.due_date}
                   onChange={(e) => setNewMaintenance({ ...newMaintenance, due_date: e.target.value })}
-                  className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-300 rounded-xl text-gray-900 font-medium focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-300 rounded-lg text-slate-900 font-semibold focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-900 mb-2">
+                <label className="block text-sm font-semibold text-slate-900 mb-2">
                   Geschätzte Kosten (€)
                 </label>
                 <input
@@ -1041,29 +1003,28 @@ export default function VehiclesPage() {
                   step="0.01"
                   value={newMaintenance.cost}
                   onChange={(e) => setNewMaintenance({ ...newMaintenance, cost: e.target.value })}
-                  className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-300 rounded-xl text-gray-900 font-medium focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-300 rounded-lg text-slate-900 font-semibold focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                   placeholder="0.00"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-900 mb-2">
+                <label className="block text-sm font-semibold text-slate-900 mb-2">
                   Notizen
                 </label>
                 <textarea
                   value={newMaintenance.notes}
                   onChange={(e) => setNewMaintenance({ ...newMaintenance, notes: e.target.value })}
-                  className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-300 rounded-xl text-gray-900 focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-300 rounded-lg text-slate-900 focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                   rows={3}
                   placeholder="Zusätzliche Informationen..."
                 />
               </div>
 
-              {/* Form Buttons */}
               <div className="flex gap-3 pt-4">
                 <button
                   onClick={addMaintenance}
-                  className="flex-1 bg-orange-600 hover:bg-orange-700 text-white font-semibold py-3 px-4 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all"
+                  className="flex-1 bg-amber-600 hover:bg-amber-700 text-white font-semibold py-3 px-4 rounded-lg shadow-sm transition-colors"
                 >
                   Wartung hinzufügen
                 </button>
@@ -1072,7 +1033,7 @@ export default function VehiclesPage() {
                     setShowMaintenanceModal(false)
                     setNewMaintenance({ maintenance_type: 'tuev', due_date: '', notes: '', cost: '' })
                   }}
-                  className="bg-gray-200 hover:bg-gray-300 text-gray-900 font-semibold py-3 px-6 rounded-xl transition-colors"
+                  className="bg-slate-200 hover:bg-slate-300 text-slate-900 font-semibold py-3 px-6 rounded-lg transition-colors"
                 >
                   Abbrechen
                 </button>
@@ -1093,8 +1054,8 @@ function DetailRow({ label, value, mono = false, highlight = false }: {
 }) {
   return (
     <div className="flex justify-between items-center py-2">
-      <span className="text-sm font-medium text-gray-600">{label}</span>
-      <span className={`text-sm text-right ${highlight ? 'font-bold text-blue-600 text-base' : 'font-semibold text-gray-900'} ${mono ? 'font-mono text-xs' : ''}`}>
+      <span className="text-sm font-semibold text-slate-600">{label}</span>
+      <span className={`text-sm text-right ${highlight ? 'font-semibold text-slate-900 text-base' : 'font-semibold text-slate-900'} ${mono ? 'font-mono text-xs' : ''}`}>
         {value || '-'}
       </span>
     </div>
