@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import jsPDF from 'jspdf'
 
 interface Tool {
   id: string
@@ -43,6 +44,11 @@ export default function ToolsPage() {
   const [toolUsage, setToolUsage] = useState<ToolUsage[]>([])
   const [editMode, setEditMode] = useState(false)
   const [editedTool, setEditedTool] = useState<Tool | null>(null)
+  const [successMessage, setSuccessMessage] = useState<string | null>(null)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [savingTool, setSavingTool] = useState(false)
+  const [deletingTool, setDeletingTool] = useState(false)
+  const [generatingPDF, setGeneratingPDF] = useState(false)
 
   useEffect(() => {
     loadTools()
@@ -85,8 +91,21 @@ export default function ToolsPage() {
     }
   }
 
+  function showSuccess(message: string) {
+    setSuccessMessage(message)
+    setTimeout(() => setSuccessMessage(null), 3000)
+  }
+
+  function showError(message: string) {
+    setErrorMessage(message)
+    setTimeout(() => setErrorMessage(null), 5000)
+  }
+
   async function updateTool() {
     if (!editedTool) return
+    
+    setSavingTool(true)
+    setErrorMessage(null)
 
     const { error } = await (supabase
       .from('tools')
@@ -100,59 +119,208 @@ export default function ToolsPage() {
       })
       .eq('id', editedTool.id)
 
-    if (!error) {
-      setTools(tools.map(t => t.id === editedTool.id ? editedTool : t))
-      setSelectedTool(editedTool)
-      setEditMode(false)
+    setSavingTool(false)
+
+    if (error) {
+      showError('Fehler beim Speichern: ' + error.message)
+      return
     }
+
+    await loadTools()
+    setSelectedTool(editedTool)
+    setEditMode(false)
+    showSuccess('Werkzeug erfolgreich aktualisiert!')
   }
 
   async function incrementWear(toolId: string) {
     const tool = tools.find(t => t.id === toolId)
     if (!tool) return
 
+    if (tool.wear_limit && tool.wear_count >= tool.wear_limit) {
+      showError('Verschleißlimit bereits erreicht!')
+      return
+    }
+
+    setErrorMessage(null)
+    const newWearCount = tool.wear_count + 1
+
     const { error } = await (supabase
       .from('tools')
-      .update as any)({ wear_count: tool.wear_count + 1 })
+      .update as any)({ wear_count: newWearCount })
       .eq('id', toolId)
 
-    if (!error) {
-      loadTools()
-      if (selectedTool?.id === toolId) {
-        setSelectedTool({ ...selectedTool, wear_count: selectedTool.wear_count + 1 })
-      }
+    if (error) {
+      showError('Fehler beim Aktualisieren: ' + error.message)
+      return
     }
+
+    await loadTools()
+    if (selectedTool?.id === toolId) {
+      setSelectedTool({ ...selectedTool, wear_count: newWearCount })
+    }
+    showSuccess('Verschleiß erhöht!')
   }
 
   async function resetWear(toolId: string) {
     const confirmed = confirm('Verschleißzähler wirklich zurücksetzen?')
     if (!confirmed) return
 
-    const { error } = await (supabase
+    setErrorMessage(null)
+
+    const { error: updateError } = await (supabase
       .from('tools')
       .update as any)({ wear_count: 0 })
       .eq('id', toolId)
 
-    if (!error) {
-      loadTools()
-      if (selectedTool?.id === toolId) {
-        setSelectedTool({ ...selectedTool, wear_count: 0 })
-      }
+    if (updateError) {
+      showError('Fehler beim Zurücksetzen: ' + updateError.message)
+      return
     }
+
+    await (supabase
+      .from('tool_usage')
+      .insert as any)({
+        tool_id: toolId,
+        user_id: (await supabase.auth.getUser()).data.user?.id,
+        scanned_at: new Date().toISOString(),
+        returned_at: new Date().toISOString(),
+        wear_increment: 0,
+        notes: 'Verschleiß zurückgesetzt'
+      })
+
+    await loadTools()
+    if (selectedTool?.id === toolId) {
+      setSelectedTool({ ...selectedTool, wear_count: 0 })
+      await loadToolUsage(toolId)
+    }
+    showSuccess('Verschleiß zurückgesetzt!')
   }
 
   async function deleteTool(toolId: string) {
-    const confirmed = confirm('Werkzeug wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.')
+    const tool = tools.find(t => t.id === toolId)
+    if (!tool) return
+
+    const confirmed = confirm(`Werkzeug "${tool.name}" wirklich löschen?\n\nDiese Aktion kann nicht rückgängig gemacht werden!`)
     if (!confirmed) return
+
+    setDeletingTool(true)
+    setErrorMessage(null)
 
     const { error } = await supabase
       .from('tools')
       .delete()
       .eq('id', toolId)
 
-    if (!error) {
-      setTools(tools.filter(t => t.id !== toolId))
-      setSelectedTool(null)
+    setDeletingTool(false)
+
+    if (error) {
+      showError('Fehler beim Löschen: ' + error.message)
+      return
+    }
+
+    setTools(tools.filter(t => t.id !== toolId))
+    setSelectedTool(null)
+    setEditMode(false)
+    showSuccess('Werkzeug erfolgreich gelöscht!')
+  }
+
+  async function generateCollectiveOrderPDF() {
+    setGeneratingPDF(true)
+    setErrorMessage(null)
+
+    try {
+      const criticalTools = tools.filter(tool => 
+        tool.wear_limit && tool.wear_count >= tool.wear_limit * 0.8
+      )
+
+      if (criticalTools.length === 0) {
+        showError('Keine Werkzeuge mit kritischem Verschleiß gefunden!')
+        setGeneratingPDF(false)
+        return
+      }
+
+      const doc = new jsPDF()
+      const pageWidth = doc.internal.pageSize.getWidth()
+      const pageHeight = doc.internal.pageSize.getHeight()
+      
+      doc.setFontSize(20)
+      doc.text('FORSTBETRIEB', pageWidth / 2, 20, { align: 'center' })
+      
+      doc.setFontSize(16)
+      doc.text('SAMMELBESTELLUNG', pageWidth / 2, 30, { align: 'center' })
+      
+      doc.setFontSize(10)
+      const today = new Date().toLocaleDateString('de-DE', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      })
+      doc.text(`Datum: ${today}`, 20, 45)
+      
+      doc.setFontSize(12)
+      doc.text('Werkzeuge mit kritischem Verschleiß:', 20, 55)
+      
+      const startY = 65
+      const rowHeight = 10
+      const colWidths = [15, 60, 35, 30, 25, 25]
+      
+      doc.setFontSize(9)
+      doc.setFont('helvetica', 'bold')
+      doc.text('Nr.', 20, startY)
+      doc.text('Werkzeug', 35, startY)
+      doc.text('Kategorie', 95, startY)
+      doc.text('Verschleiß', 130, startY)
+      doc.text('Limit', 160, startY)
+      doc.text('Menge', 185, startY)
+      
+      doc.line(20, startY + 2, pageWidth - 20, startY + 2)
+      
+      doc.setFont('helvetica', 'normal')
+      
+      let currentY = startY + rowHeight
+      criticalTools.forEach((tool, index) => {
+        if (currentY > pageHeight - 30) {
+          doc.addPage()
+          currentY = 20
+        }
+        
+        const categoryLabels: Record<string, string> = {
+          saege: 'Säge',
+          kette: 'Kette',
+          schutz: 'Schutz',
+          werkzeug: 'Werkzeug',
+          sonstiges: 'Sonstiges',
+        }
+        
+        doc.text(`${index + 1}`, 20, currentY)
+        doc.text(tool.name.substring(0, 30), 35, currentY)
+        doc.text(categoryLabels[tool.category] || tool.category, 95, currentY)
+        doc.text(`${tool.wear_count}/${tool.wear_limit}`, 130, currentY)
+        doc.text(tool.wear_limit?.toString() || '-', 160, currentY)
+        doc.text('1', 185, currentY)
+        
+        currentY += rowHeight
+      })
+      
+      doc.line(20, currentY, pageWidth - 20, currentY)
+      currentY += 10
+      
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(11)
+      doc.text(`Gesamt: ${criticalTools.length} Werkzeug${criticalTools.length !== 1 ? 'e' : ''}`, 20, currentY)
+      
+      doc.setFontSize(8)
+      doc.setFont('helvetica', 'normal')
+      doc.text(`Erstellt am ${today}`, pageWidth / 2, pageHeight - 10, { align: 'center' })
+      
+      const fileName = `Sammelbestellung_${new Date().toISOString().split('T')[0]}.pdf`
+      doc.save(fileName)
+      
+      showSuccess(`PDF erfolgreich erstellt: ${fileName}`)
+    } catch (error) {
+      showError('Fehler beim Erstellen der PDF: ' + (error as Error).message)
+    } finally {
+      setGeneratingPDF(false)
     }
   }
 
@@ -174,6 +342,7 @@ export default function ToolsPage() {
     inUse: tools.filter(t => t.status === 'im_einsatz').length,
     maintenance: tools.filter(t => t.status === 'wartung').length,
     critical: tools.filter(t => t.wear_limit && t.wear_count >= t.wear_limit * 0.8).length,
+    totalCost: tools.reduce((sum, t) => sum + (t.purchase_price || 0), 0),
   }
 
   const getCategoryColor = (category: string) => {
@@ -224,12 +393,66 @@ export default function ToolsPage() {
 
   return (
     <div className="space-y-6">
+      {successMessage && (
+        <div className="fixed top-4 right-4 z-50">
+          <div className="bg-emerald-600 text-white px-6 py-4 rounded-lg shadow-lg flex items-center space-x-3">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span className="font-semibold">{successMessage}</span>
+          </div>
+        </div>
+      )}
+
+      {errorMessage && (
+        <div className="fixed top-4 right-4 z-50">
+          <div className="bg-rose-600 text-white px-6 py-4 rounded-lg shadow-lg flex items-start space-x-3 max-w-md">
+            <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div>
+              <p className="font-semibold">Fehler</p>
+              <p className="text-sm text-rose-100">{errorMessage}</p>
+            </div>
+            <button onClick={() => setErrorMessage(null)} className="ml-auto">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-slate-900 leading-relaxed">Werkzeugverwaltung</h1>
-          <p className="text-slate-600 mt-1 leading-relaxed">{tools.length} Werkzeuge gesamt</p>
+          <p className="text-slate-600 mt-1 leading-relaxed">
+            {tools.length} Werkzeuge gesamt • Gesamtwert: {stats.totalCost.toFixed(2)} €
+          </p>
         </div>
         <div className="flex gap-3">
+          <button
+            onClick={generateCollectiveOrderPDF}
+            disabled={generatingPDF || stats.critical === 0}
+            className="flex items-center space-x-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-lg shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {generatingPDF ? (
+              <>
+                <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+                <span>Erstelle PDF...</span>
+              </>
+            ) : (
+              <>
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
+                <span>Sammelbestellung ({stats.critical})</span>
+              </>
+            )}
+          </button>
           <button
             onClick={() => setShowScanner(true)}
             className="flex items-center space-x-2 px-4 py-2 bg-white hover:bg-slate-50 text-slate-900 font-semibold rounded-lg border border-slate-300 shadow-sm transition-colors"
@@ -380,6 +603,11 @@ export default function ToolsPage() {
                     {tool.purchase_date && (
                       <div className="text-xs text-slate-500">
                         Gekauft: {new Date(tool.purchase_date).toLocaleDateString('de-DE')}
+                      </div>
+                    )}
+                    {tool.purchase_price && (
+                      <div className="text-xs text-slate-500">
+                        Wert: {tool.purchase_price.toFixed(2)} €
                       </div>
                     )}
                   </td>
@@ -609,7 +837,8 @@ export default function ToolsPage() {
                         <div className="flex gap-2">
                           <button
                             onClick={() => incrementWear(selectedTool.id)}
-                            className="flex-1 bg-slate-700 text-white px-4 py-2 rounded hover:bg-slate-800 text-sm font-semibold"
+                            disabled={selectedTool.wear_limit && selectedTool.wear_count >= selectedTool.wear_limit}
+                            className="flex-1 bg-slate-700 text-white px-4 py-2 rounded hover:bg-slate-800 text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             + Verschleiß
                           </button>
@@ -663,6 +892,9 @@ export default function ToolsPage() {
                               <> bis {new Date(usage.returned_at).toLocaleString('de-DE')}</>
                             )}
                           </div>
+                          {usage.notes && (
+                            <div className="text-xs text-slate-600 mt-1 italic">{usage.notes}</div>
+                          )}
                         </div>
                         <div className="text-sm">
                           {usage.returned_at ? (
@@ -686,16 +918,28 @@ export default function ToolsPage() {
                   <>
                     <button
                       onClick={updateTool}
-                      className="flex-1 bg-slate-700 text-white px-4 py-2 rounded hover:bg-slate-800 font-semibold"
+                      disabled={savingTool}
+                      className="flex-1 bg-slate-700 text-white px-4 py-2 rounded hover:bg-slate-800 font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                     >
-                      Speichern
+                      {savingTool ? (
+                        <>
+                          <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                          </svg>
+                          Speichern...
+                        </>
+                      ) : (
+                        'Speichern'
+                      )}
                     </button>
                     <button
                       onClick={() => {
                         setEditMode(false)
                         setEditedTool(null)
                       }}
-                      className="flex-1 bg-slate-200 text-slate-900 px-4 py-2 rounded hover:bg-slate-300 font-semibold"
+                      disabled={savingTool}
+                      className="flex-1 bg-slate-200 text-slate-900 px-4 py-2 rounded hover:bg-slate-300 font-semibold disabled:opacity-50"
                     >
                       Abbrechen
                     </button>
@@ -713,9 +957,20 @@ export default function ToolsPage() {
                     </button>
                     <button
                       onClick={() => deleteTool(selectedTool.id)}
-                      className="bg-rose-600 text-white px-4 py-2 rounded hover:bg-rose-700 font-semibold"
+                      disabled={deletingTool}
+                      className="bg-rose-600 text-white px-4 py-2 rounded hover:bg-rose-700 font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
                     >
-                      Löschen
+                      {deletingTool ? (
+                        <>
+                          <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                          </svg>
+                          Löschen...
+                        </>
+                      ) : (
+                        'Löschen'
+                      )}
                     </button>
                   </>
                 )}
