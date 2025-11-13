@@ -837,7 +837,7 @@ export default function ToolsPage() {
                         <div className="flex gap-2">
                           <button
                             onClick={() => incrementWear(selectedTool.id)}
-                            disabled={selectedTool.wear_limit && selectedTool.wear_count >= selectedTool.wear_limit}
+                            disabled={!!(selectedTool.wear_limit && selectedTool.wear_count >= selectedTool.wear_limit)}
                             className="flex-1 bg-slate-700 text-white px-4 py-2 rounded hover:bg-slate-800 text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             + Verschleiß
