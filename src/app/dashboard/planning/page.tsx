@@ -204,9 +204,9 @@ export default function PlanningPage() {
     setSaving(true)
     setErrorMessage(null)
 
-    const { error } = await supabase
+    const { error } = await (supabase
       .from('assignments')
-      .insert({
+      .insert as any)({
         title: newAssignment.title,
         description: newAssignment.description || null,
         location: newAssignment.location || null,
@@ -265,9 +265,9 @@ export default function PlanningPage() {
     setSaving(true)
     setErrorMessage(null)
 
-    const { error } = await supabase
+    const { error } = await (supabase
       .from('assignments')
-      .update({
+      .update as any)({
         title: newAssignment.title,
         description: newAssignment.description || null,
         location: newAssignment.location || null,
@@ -299,9 +299,9 @@ export default function PlanningPage() {
   async function updateStatus(assignmentId: string, newStatus: string) {
     if (!currentUser) return
 
-    const { error } = await supabase
+    const { error } = await (supabase
       .from('assignments')
-      .update({
+      .update as any)({
         status: newStatus,
         updated_by: currentUser,
         updated_at: new Date().toISOString(),
@@ -351,9 +351,9 @@ export default function PlanningPage() {
     const assignment = assignments.find(a => a.id === arg.event.id)
     if (!assignment || !currentUser) return
 
-    const { error } = await supabase
+    const { error } = await (supabase
       .from('assignments')
-      .update({
+      .update as any)({
         start_datetime: arg.event.start?.toISOString() || assignment.start_datetime,
         end_datetime: arg.event.end?.toISOString() || assignment.end_datetime,
         updated_by: currentUser,
